@@ -1,0 +1,27 @@
+{
+  "id": "zosov07/nvidia-nemotron-experiment",
+  "title": "NVIDIA Nemotron Experiment",
+  "code_file": "nvidia-nemotron-experiment.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "keywords": [],
+  "dataset_sources": [
+    "zosov07/trl-offline",
+    "zosov07/nemotron-rl-approach"
+  ],
+  "kernel_sources": [
+    "ryanholbrook/nvidia-utility-script"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-3-reasoning-challenge"
+  ],
+  "model_sources": [
+    "metric/nemotron-3-nano-30b-a3b-bf16/Transformers/default/1"
+  ],
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:00377cd1b3d470a605bc5b0ceca79969e369644e9b36802242a1c70e627372f9",
+  "machine_shape": "None"
+}

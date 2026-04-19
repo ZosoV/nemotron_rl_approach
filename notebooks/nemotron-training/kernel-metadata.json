@@ -1,0 +1,27 @@
+{
+  "id": "zosov07/nvidia-nemotron-training",
+  "id_no": 115788053,
+  "title": "NVIDIA Nemotron Training",
+  "code_file": "nvidia-nemotron-training.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "keywords": [],
+  "dataset_sources": [
+    "zosov07/trl-offline"
+  ],
+  "kernel_sources": [
+    "ryanholbrook/nvidia-utility-script"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": [
+    "metric/nemotron-3-nano-30b-a3b-bf16/Transformers/default/1"
+  ],
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:00377cd1b3d470a605bc5b0ceca79969e369644e9b36802242a1c70e627372f9",
+  "machine_shape": "None"
+}

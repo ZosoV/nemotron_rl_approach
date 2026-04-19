@@ -2,101 +2,163 @@
 
 Modular GRPO training for NVIDIA Nemotron, runnable on Kaggle.
 
-## One-time setup
+---
 
-### 1. Connect the repo to Kaggle (automated sync)
+## Two independent workflows
 
-Every push to `main` that touches `nemotron_grpo/`, `notebooks/`, or `pyproject.toml` will automatically update the Kaggle dataset via the GitHub Action in `.github/workflows/kaggle-sync.yml`.
+| What | How |
+|---|---|
+| Keep code versioned | `git push` to GitHub as normal |
+| Sync dataset + kernel to Kaggle | `./sync_kaggle.sh` from the repo root |
 
-**One-time bootstrap:**
+They are **not linked** — pushing to GitHub does not update Kaggle. Run the sync manually whenever you want Kaggle to reflect your latest changes.
 
-1. Edit `dataset-metadata.json` — replace `YOUR_KAGGLE_USERNAME` with your actual Kaggle username.
-2. Create the dataset on Kaggle first (it must exist before the action can update it):
-   - Kaggle → **Create → New Dataset** → name it `nemotron-rl-approach`.
-3. Add two secrets to the GitHub repo (**Settings → Secrets and variables → Actions**):
-   - `KAGGLE_USERNAME` — your Kaggle username.
-   - `KAGGLE_KEY` — your Kaggle API key (from **kaggle.com → Account → API → Create New Token**).
-4. Push to `main` — the action will run and upload `nemotron_grpo/`, `notebooks/`, `pyproject.toml`, and `CLAUDE.md` (`.kaggleignore` excludes `.git`, `.venv`, `inputs/`, `outputs/`, and lock files).
+---
 
-After this, every push to `main` keeps the Kaggle dataset in sync automatically. You can also trigger it manually from **GitHub → Actions → Sync to Kaggle Dataset → Run workflow**.
+## Syncing to Kaggle
 
-### 2. Prepare the offline TRL dataset
+### One-time setup
 
-On a machine with internet access:
+1. Get your Kaggle API credentials: kaggle.com → **Settings → API → Create New Token** → downloads `kaggle.json`.
+
+2. Place the credentials file:
+   ```bash
+   mkdir -p ~/.kaggle
+   mv ~/Downloads/kaggle.json ~/.kaggle/kaggle.json
+   chmod 600 ~/.kaggle/kaggle.json
+   ```
+
+3. Install the Kaggle CLI (already a dependency — `uv sync` is enough):
+   ```bash
+   uv sync
+   ```
+
+4. Create the dataset on Kaggle the **first time only**:
+   ```bash
+   kaggle datasets create -p . --dir-mode tar
+   ```
+   This reads `dataset-metadata.json` from the repo root and creates `zosov07/nemotron-rl-approach`.
+
+5. Prepare the offline package datasets (one-time, needed for Kaggle notebooks without internet):
+   ```bash
+   # TRL
+   mkdir trl_packages && pip download trl -d trl_packages/
+   cat > trl_packages/dataset-metadata.json << 'EOF'
+   {"title":"trl-offline","id":"zosov07/trl-offline","licenses":[{"name":"CC0-1.0"}]}
+   EOF
+   kaggle datasets create -p trl_packages/ --dir-mode tar
+
+   # W&B
+   mkdir wandb_packages && pip download wandb -d wandb_packages/
+   cat > wandb_packages/dataset-metadata.json << 'EOF'
+   {"title":"wandb-offline","id":"zosov07/wandb-offline","licenses":[{"name":"CC0-1.0"}]}
+   EOF
+   kaggle datasets create -p wandb_packages/ --dir-mode tar
+   ```
+
+### sync_kaggle.sh — usage
+
+Run from the repo root:
 
 ```bash
-mkdir trl_packages
-pip download trl -d trl_packages
+./sync_kaggle.sh                           # sync both dataset + experiment kernel (default)
+./sync_kaggle.sh "message"                 # same, with a version message
+./sync_kaggle.sh "message" --dataset       # dataset only
+./sync_kaggle.sh "message" --experiment    # experiment kernel only
 ```
 
-Upload the `trl_packages/` folder as a Kaggle dataset named `trl-offline` (path becomes `/kaggle/input/trl-offline/trl_packages`).
+**What each target does:**
 
-### 3. Prepare the offline W&B dataset
+| Flag | Action |
+|---|---|
+| *(default / `--both`)* | Updates the dataset version, then pushes the experiment kernel |
+| `--dataset` | Uploads `nemotron_grpo/`, `notebooks/`, config files as a new version of `zosov07/nemotron-rl-approach` |
+| `--experiment` | Pushes `notebooks/nemotron-experiment/` as a new version of the `zosov07/nvidia-nemotron-experiment` kernel |
 
-On a machine with internet access:
+The experiment kernel reads its sources from `notebooks/nemotron-experiment/kernel-metadata.json`, which declares:
+- **Datasets**: `zosov07/nemotron-rl-approach`, `zosov07/trl-offline`, `zosov07/wandb-offline`
+- **Competition**: `nvidia-nemotron-3-reasoning-challenge`
+- **Model**: `metric/nemotron-3-nano-30b-a3b-bf16`
+
+### Pulling and modifying an existing Kaggle kernel locally
 
 ```bash
-mkdir wandb_packages
-pip download wandb -d wandb_packages
+# Pull kernel + metadata into a local folder
+kaggle kernels pull zosov07/nvidia-nemotron-training -p notebooks/nemotron-training --metadata
+
+# Edit the notebook, then push back
+(cd notebooks/nemotron-training && kaggle kernels push -p .)
 ```
 
-Upload the `wandb_packages/` folder as a Kaggle dataset named `wandb-offline` (path becomes `/kaggle/input/wandb-offline/wandb_packages`).
+### Setting the W&B API key (online mode only)
 
-### 4. Attach the base model and competition data
+By default W&B runs **offline** — no API key needed. To stream metrics live:
 
-The following should already be attached or searchable on Kaggle:
+1. Get your key from <https://wandb.ai/authorize>.
+2. In the Kaggle notebook → **Add-ons → Secrets** → **Add a new secret**:
+   - Name: `WANDB_API_KEY`
+   - Value: your key
+   - Toggle it **on** for the notebook.
+3. In the notebook config, set:
+   ```python
+   config = GRPOExperimentConfig(
+       ...
+       wandb_mode="online",
+   )
+   ```
+4. Enable **Internet: On** for the notebook session (Kaggle sidebar → **Internet**).
 
-- **Model**: `metric/nemotron-3-nano-30b-a3b-bf16` → mounted at `/kaggle/input/models/metric/nemotron-3-nano-30b-a3b-bf16/transformers/default/1`
-- **Competition data**: `nvidia-nemotron-3-reasoning-challenge` → `train.csv` at `/kaggle/input/nvidia-nemotron-3-reasoning-challenge/train.csv`
+The code reads the key automatically via `kaggle_secrets.UserSecretsClient` when `wandb_mode="online"` — nothing else to change.
 
-### 5. (Optional) Online W&B logging
+### Pushing to GitHub
 
-By default W&B runs in **offline** mode (no internet needed). To enable live logging:
+Independent from Kaggle — normal git workflow:
 
-1. Create a W&B account and copy your API key from <https://wandb.ai/authorize>.
-2. In the notebook → **Add-ons → Secrets** → add a secret named `WANDB_API_KEY` with that value, toggled on.
-3. In the notebook config, set `wandb_mode="online"`.
-4. Enable **Internet: On** for the notebook session.
+```bash
+git add .
+git commit -m "your message"
+git push origin main
+```
+
+---
 
 ## Running on Kaggle
 
-1. Open `notebooks/nvidia-nemotron-training.ipynb` on Kaggle.
-2. **Add-ons → Add data** — attach all datasets:
-   - `nemotron-rl-approach` (this repo)
-   - `trl-offline`
-   - `wandb-offline`
-   - `nvidia-nemotron-3-reasoning-challenge`
-   - The Nemotron model (via Models tab)
-3. Set **Accelerator → GPU** (T4×2 or P100). Internet can stay **OFF** — W&B defaults to offline mode.
-4. Run all cells top-to-bottom.
-5. Final output: LoRA adapter in `/kaggle/working/grpo_run/`, zipped as `submission.zip`.
+Open `notebooks/nemotron-experiment/nvidia-nemotron-experiment.ipynb` on Kaggle. All data sources are declared in `kernel-metadata.json` and attached automatically when pushing via the CLI.
+
+Set **Accelerator → GPU**. Internet can stay **OFF** — W&B runs in offline mode by default.
+
+Output: LoRA adapter in `/kaggle/working/grpo_run/`, zipped as `submission.zip`.
+
+---
 
 ## Syncing offline W&B runs
 
-After downloading `/kaggle/working/wandb/` from the notebook output, run on any internet-connected machine with `wandb` installed:
+Download `/kaggle/working/wandb/` from the notebook outputs, then on any machine with internet:
 
 ```bash
-wandb sync /path/to/downloaded/wandb/offline-run-*
+wandb sync /path/to/wandb/offline-run-*
 ```
+
+---
 
 ## Experimenting
 
-Edit the `GRPOExperimentConfig` in the notebook to change hyperparameters or swap reward functions:
+Edit `GRPOExperimentConfig` in the notebook to change hyperparameters or swap reward functions:
 
 ```python
 config = GRPOExperimentConfig(
     model_path="...",
-    reward_functions=["cosine_reward"],        # try a single reward
-    learning_rate=5e-6,                        # override a default
-    max_grad_norm=0.1,                         # enable an optional kwarg
-    wandb_run_name="lr5e-6-cosine-only",
-    wandb_tags=["ablation"],
+    reward_functions=["accuracy_reward"],  # or: cosine_reward, format_reward, length_reward
+    learning_rate=5e-6,
+    max_grad_norm=0.1,                     # optional — leave out to use TRL default
+    wandb_run_name="lr5e-6-accuracy",
 )
 ```
 
-Available reward functions: `cosine_reward`, `format_reward`, `length_reward`.
+To add a new reward function: one entry in `nemotron_grpo/rewards.py::REGISTRY`.
 
-To add a new reward function, add one entry to `nemotron_grpo/rewards.py::REGISTRY`.
+---
 
 ## Local development
 
