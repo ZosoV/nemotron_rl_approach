@@ -4,11 +4,21 @@ Modular GRPO training for NVIDIA Nemotron, runnable on Kaggle.
 
 ## One-time setup
 
-### 1. Publish this repo as a Kaggle dataset
+### 1. Connect the repo to Kaggle (automated sync)
 
-- Push to GitHub.
-- Kaggle → **Create → New Dataset → GitHub** → paste the repo URL → name it `nemotron-rl-approach` (slug becomes `/kaggle/input/nemotron-rl-approach`).
-- Click **Update** whenever `nemotron_grpo/` changes between experiments.
+Every push to `main` that touches `nemotron_grpo/`, `notebooks/`, or `pyproject.toml` will automatically update the Kaggle dataset via the GitHub Action in `.github/workflows/kaggle-sync.yml`.
+
+**One-time bootstrap:**
+
+1. Edit `dataset-metadata.json` — replace `YOUR_KAGGLE_USERNAME` with your actual Kaggle username.
+2. Create the dataset on Kaggle first (it must exist before the action can update it):
+   - Kaggle → **Create → New Dataset** → name it `nemotron-rl-approach`.
+3. Add two secrets to the GitHub repo (**Settings → Secrets and variables → Actions**):
+   - `KAGGLE_USERNAME` — your Kaggle username.
+   - `KAGGLE_KEY` — your Kaggle API key (from **kaggle.com → Account → API → Create New Token**).
+4. Push to `main` — the action will run and upload `nemotron_grpo/`, `notebooks/`, `pyproject.toml`, and `CLAUDE.md` (`.kaggleignore` excludes `.git`, `.venv`, `inputs/`, `outputs/`, and lock files).
+
+After this, every push to `main` keeps the Kaggle dataset in sync automatically. You can also trigger it manually from **GitHub → Actions → Sync to Kaggle Dataset → Run workflow**.
 
 ### 2. Prepare the offline TRL dataset
 

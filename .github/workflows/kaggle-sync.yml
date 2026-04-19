@@ -1,0 +1,23 @@
+name: Sync to Kaggle Dataset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "nemotron_grpo/**"
+      - "notebooks/**"
+      - "pyproject.toml"
+      - "dataset-metadata.json"
+  workflow_dispatch:  # allow manual trigger from GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push to Kaggle dataset
+        uses: jaimevalero/push-kaggle-dataset@v3
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
