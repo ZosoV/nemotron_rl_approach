@@ -7,7 +7,8 @@ on:
       - "nemotron_grpo/**"
       - "notebooks/**"
       - "pyproject.toml"
-      - "dataset-metadata.json"
+      - "CLAUDE.md"
+      - "README.md"
   workflow_dispatch:  # allow manual trigger from GitHub UI
 
 jobs:
@@ -16,11 +17,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Kaggle CLI
-        run: pip install kaggle
-
       - name: Push to Kaggle dataset
-        run: kaggle datasets version -p . -m "Sync from ${{ github.sha }}"
+        uses: jaimevalero/push-kaggle-dataset@v3.2
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        with:
+          id: "zosov07/nemotron-rl-approach"
+          title: "nemotron-rl-approach"
+          files: |
+            nemotron_grpo
+            notebooks
+            pyproject.toml
+            CLAUDE.md
+            README.md

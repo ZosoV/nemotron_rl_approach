@@ -10,79 +10,37 @@ Every push to `main` that touches `nemotron_grpo/`, `notebooks/`, or `pyproject.
 
 **One-time bootstrap:**
 
-**a) Configure Kaggle credentials locally**
-
-Download `kaggle.json` from kaggle.com → Account → API → **Create New Token**, then:
-
-```bash
-mkdir -p ~/.kaggle
-mv ~/Downloads/kaggle.json ~/.kaggle/kaggle.json
-chmod 600 ~/.kaggle/kaggle.json
-```
-
-The `kaggle` CLI is already a project dependency — install it with:
-
-```bash
-uv sync
-```
-
-**b) Create the dataset on Kaggle**
-
-The dataset must exist before the Action can update it. Run once from the repo root (`dataset-metadata.json` is read automatically):
-
-```bash
-kaggle datasets create -p .
-```
-
-This creates the dataset at `zosov07/nemotron-rl-approach`. Content uploaded here doesn't matter — the Action will overwrite it on the next push.
-
-**c) Add secrets to the GitHub repo**
-
-Go to **Settings → Secrets and variables → Actions → New repository secret** and add:
-
-- `KAGGLE_USERNAME` → your Kaggle username
-- `KAGGLE_KEY` → the `key` value from your `kaggle.json`
-
-**d) Push to trigger the first sync**
-
-```bash
-git add .
-git commit -m "initial project structure"
-git push origin main
-```
-
-The Action runs and uploads `nemotron_grpo/`, `notebooks/`, `pyproject.toml`, and `CLAUDE.md`. Files listed in `.kaggleignore` (`.venv`, `inputs/`, `outputs/`, `uv.lock`, etc.) are excluded.
+1. Edit `dataset-metadata.json` — replace `YOUR_KAGGLE_USERNAME` with your actual Kaggle username.
+2. Create the dataset on Kaggle first (it must exist before the action can update it):
+   - Kaggle → **Create → New Dataset** → name it `nemotron-rl-approach`.
+3. Add two secrets to the GitHub repo (**Settings → Secrets and variables → Actions**):
+   - `KAGGLE_USERNAME` — your Kaggle username.
+   - `KAGGLE_KEY` — your Kaggle API key (from **kaggle.com → Account → API → Create New Token**).
+4. Push to `main` — the action will run and upload `nemotron_grpo/`, `notebooks/`, `pyproject.toml`, and `CLAUDE.md` (`.kaggleignore` excludes `.git`, `.venv`, `inputs/`, `outputs/`, and lock files).
 
 After this, every push to `main` keeps the Kaggle dataset in sync automatically. You can also trigger it manually from **GitHub → Actions → Sync to Kaggle Dataset → Run workflow**.
 
 ### 2. Prepare the offline TRL dataset
 
+On a machine with internet access:
+
 ```bash
-mkdir -p trl-offline/trl_packages
-pip download trl -d trl-offline/trl_packages
-
-# Create dataset-metadata.json for this dataset
-echo '{"title":"trl-offline","id":"zosov07/trl-offline","licenses":[{"name":"CC0-1.0"}]}' \
-  > trl-offline/dataset-metadata.json
-
-kaggle datasets create -p trl-offline
+mkdir trl_packages
+pip download trl -d trl_packages
 ```
 
-Mounted in Kaggle at `/kaggle/input/trl-offline/trl_packages`.
+Upload the `trl_packages/` folder as a Kaggle dataset named `trl-offline` (path becomes `/kaggle/input/trl-offline/trl_packages`).
 
 ### 3. Prepare the offline W&B dataset
 
+On a machine with internet access:
+
 ```bash
-mkdir -p wandb-offline/wandb_packages
-pip download wandb -d wandb-offline/wandb_packages
-
-echo '{"title":"wandb-offline","id":"zosov07/wandb-offline","licenses":[{"name":"CC0-1.0"}]}' \
-  > wandb-offline/dataset-metadata.json
-
-kaggle datasets create -p wandb-offline
+mkdir wandb_packages
+pip download wandb -d wandb_packages
 ```
 
-Mounted in Kaggle at `/kaggle/input/wandb-offline/wandb_packages`.
+Upload the `wandb_packages/` folder as a Kaggle dataset named `wandb-offline` (path becomes `/kaggle/input/wandb-offline/wandb_packages`).
 
 ### 4. Attach the base model and competition data
 
