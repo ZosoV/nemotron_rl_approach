@@ -1,10 +1,8 @@
-inputs
-outputs
-.venv
-inputs
-outputs
+inputs/
+outputs/
+.venv/
 uv.lock
-__pycache__
+__pycache__/
 *.pyc
 *.pyo
 .env
