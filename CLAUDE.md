@@ -36,7 +36,7 @@ python -c "from nemotron_grpo.rewards import REGISTRY; print(list(REGISTRY))"
 
 `REGISTRY` maps string names to factory lambdas `(config) -> callable`. To add a new reward: implement a function with signature `(completions, ground_truth, **kwargs) -> list[float]` and add one entry to `REGISTRY`. The user selects rewards via `config.reward_functions` (list of string names); `resolve_rewards(config)` resolves them at trainer build time.
 
-`cosine_reward` and `length_reward` are parameterized by `max_completion_length` via closure factories (`build_cosine_reward`, `build_length_reward`). `format_reward` has no config dependency.
+Available rewards: `accuracy_reward` (TRL built-in, imported lazily), `cosine_reward` (length-scaled accuracy, factory over `max_completion_length`), `format_reward` (binary `\boxed{}` check), `length_reward` (length penalty, factory over `max_completion_length`).
 
 ### W&B (`wandb_utils.py`)
 

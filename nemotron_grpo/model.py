@@ -19,6 +19,7 @@ def load_model_and_tokenizer(config: GRPOExperimentConfig):
         trust_remote_code=True,
     )
     print("Model loaded successfully.")
+    model.print_trainable_parameters()
     return model, tokenizer
 
 
@@ -33,5 +34,6 @@ def apply_lora(model, config: GRPOExperimentConfig):
         task_type=TaskType.CAUSAL_LM,
     )
     model = get_peft_model(model, lora_config)
+    print("Apply Lora successfully.")
     model.print_trainable_parameters()
     return model

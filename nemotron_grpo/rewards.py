@@ -104,7 +104,13 @@ def format_reward(completions, **kwargs):
 
 # ── Registry ───────────────────────────────────────────────────────────────────
 
+def _get_accuracy_reward():
+    from trl.rewards import accuracy_reward
+    return accuracy_reward
+
+
 REGISTRY: dict[str, Callable] = {
+    "accuracy_reward": lambda cfg: _get_accuracy_reward(),
     "cosine_reward": lambda cfg: build_cosine_reward(cfg.max_completion_length),
     "format_reward": lambda cfg: format_reward,
     "length_reward": lambda cfg: build_length_reward(cfg.max_completion_length),
