@@ -16,8 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Kaggle CLI
+        run: pip install kaggle
+
       - name: Push to Kaggle dataset
-        uses: jaimevalero/push-kaggle-dataset@v3
+        run: kaggle datasets version -p . -m "Sync from ${{ github.sha }}"
         env:
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
