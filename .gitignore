@@ -1,0 +1,10 @@
+inputs
+outputs
+.venv
+inputs
+outputs
+uv.lock
+__pycache__
+*.pyc
+*.pyo
+.env
