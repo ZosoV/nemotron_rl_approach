@@ -37,3 +37,6 @@ def apply_lora(model, config: GRPOExperimentConfig):
     print("Apply Lora successfully.")
     model.print_trainable_parameters()
     return model
+
+def foo():
+    print("testing githubg actions")
